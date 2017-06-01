@@ -1,0 +1,19 @@
+Package: mendeleyr
+Type: Package
+Title: Mendeley API for R
+Version: 0.1.0
+Authors@R: person("Sergio", c("Oller", "Moreno"),
+                  email = "sergioller@gmail.com", role = c("aut", "cph", "cre"))
+Description: This package interfaces with the R API from Mendeley
+    It currently supports a small subset of the API, but enough for my simple needs.
+    The package does not yet provide a stable API and will be abandoned when
+    Mendeley provides a better alternative. I do not plan to submit it to CRAN.
+    I am looking forward to stop using mendeleyr as the package name if Mendeley
+    decides to use it.
+Imports: jsonlite, httr, httpuv, curl
+Suggests: dplyr
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.0.1
+Roxygen: list(markdown = TRUE)
