@@ -5,7 +5,7 @@
 \alias{mdl_conf_new}
 \alias{mdl_conf_save}
 \alias{mdl_conf_load}
-\title{Obtain and use client_id and client_secret}
+\title{Create, Load and Save client_id and client_secret}
 \usage{
 mdl_conf_new()
 
@@ -21,5 +21,5 @@ mdl_conf_load(where = ".mendeley_conf.json")
 \item{where}{File name where mendeleyr will store the client_id and client_secret}
 }
 \description{
-Obtain and use client_id and client_secret
+Create, Load and Save client_id and client_secret
 }

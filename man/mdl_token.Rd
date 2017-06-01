@@ -7,7 +7,8 @@
 mdl_token(mendeley_conf)
 }
 \arguments{
-\item{mendeley_conf}{a list with two items: \code{client_id} and \code{client_secret}.}
+\item{mendeley_conf}{a list with two items: \code{client_id} and \code{client_secret}.
+If it is a file path to a json file, it will be loaded with \code{\link[=mdl_conf_load]{mdl_conf_load()}}}
 }
 \description{
 The first time you get the token you will need to authorise your application
@@ -15,6 +16,12 @@ The first time you get the token you will need to authorise your application
 }
 \examples{
 \dontrun{
-token <- mdl_token(mdl_conf_load())
+ # loads secret from ".mendeley_conf.json" in current directory:
+token <- mdl_token()
+# loads secret from "secret.json" in current directory
+token <- mdl_token("secret.json")
+# Loads secret from code (not recommended, as it may be accidentally redistributed)
+token <- mdl_token(list(client_id = "given-by-mendeley", client_secret = "given-by-mendeley"))
+
 }
 }

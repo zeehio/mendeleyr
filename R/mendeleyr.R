@@ -1,4 +1,4 @@
-#' Obtain and use client_id and client_secret
+#' Create, Load and Save client_id and client_secret
 #' @param client_id The client id given by Mendeley when you create an app at http://dev.mendeley.com/myapps.html
 #' @param client_secret The client secret given by Mendeley when you create an app
 #' @param where File name where mendeleyr will store the client_id and client_secret
@@ -43,15 +43,29 @@ mdl_conf_load <- function(where = ".mendeley_conf.json") {
 #' The first time you get the token you will need to authorise your application
 #' (mendeleyr) access to your account.
 #' @param mendeley_conf a list with two items: `client_id` and `client_secret`.
+#'  If it is a file path to a json file, it will be loaded with [mdl_conf_load()]
 #' @examples
 #' \dontrun{
-#' token <- mdl_token(mdl_conf_load())
+#'  # loads secret from ".mendeley_conf.json" in current directory:
+#' token <- mdl_token()
+#' # loads secret from "secret.json" in current directory
+#' token <- mdl_token("secret.json")
+#' # Loads secret from code (not recommended, as it may be accidentally redistributed)
+#' token <- mdl_token(list(client_id = "given-by-mendeley", client_secret = "given-by-mendeley"))
+#'
 #' }
 #' @export
 mdl_token <- function(mendeley_conf) {
   if (missing(mendeley_conf)) {
     mendeley_conf <- mdl_conf_load()
+  } else if (is.character(mendeley_conf) &&
+             length(mendeley_conf) == 1 &&
+             file.exists(mendeley_conf)) {
+    mendeley_conf <- mdl_conf_load(mendeley_conf)
+  } else if (!is.list(mendeley_conf)) {
+    stop("mdl_token has an invalid mendeley_conf")
   }
+
   # 1. OAuth settings for mendeley:
   mendeley_oauth <- httr::oauth_endpoint(
     authorize = "https://api.mendeley.com/oauth/authorize",
@@ -210,7 +224,7 @@ mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
                           group_name = NULL, group_id = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
   folder_id <- get_folder_id(token, folder_name, folder_id, group_id = group_id)
-  if (is.null(folder_id)) {
+  if (!is.null(folder_id)) {
     url <- paste0("https://api.mendeley.com/folders/", folder_id, "/documents")
   } else {
     url <- paste0("https://api.mendeley.com/documents")
@@ -221,6 +235,30 @@ mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
     mdl_get_all_pages(url,
                       token,
                       httr::accept("application/vnd.mendeley-document.1+json")))
+}
+
+#' Download a file
+#' @inheritParams mdl_common_params
+#' @param file_row A row from [mdl_files()] with the file we want to download
+#' @param destfile The path where we want to save destfile, by default keeps
+#'                 the original file name in the current working directory
+#' @export
+mdl_download_file <- function(token, file_row, destfile = NULL) {
+  if (is.null(destfile)) {
+    outdir <- getwd()
+    file_name <- tools::file_path_sans_ext(file_row$file_name)
+    file_ext <- tools::file_ext(file_row$file_name)
+    destfile <- file.path(outdir, paste0(file_name, ".", file_ext))
+    i <- 0
+    while (file.exists(destfile)) {
+      i <- i + 1
+      destfile <- file.path(outdir, paste0(file_name, "-" , i,  ".", file_ext))
+    }
+  }
+  url <- paste0("https://api.mendeley.com/files/", file_row$id)
+  result_1 <- httr::GET(url, token)
+  curl::curl_download(result_1$url, destfile)
+  return(destfile)
 }
 
 mdl_docid_as_bibtex_one <- function(token, document_id) {
@@ -245,13 +283,13 @@ mdl_docid_as_bibtex <- function(token, document_id) {
   do.call(paste, c(bibtex, list(sep = "\n\n")))
 }
 
-#' Creates a bib file from a Mendeley folder
+#' Creates a bib file from a Mendeley folder or group
 #' @inheritParams mdl_common_params
 #' @param bibfile "*.bib" file to write the documents from folder_name
 #' @export
-export_folder_to_bibtex <- function(token, folder_name = NULL, folder_id = NULL,
-                                    group_name = NULL, group_id = NULL,
-                                    bibfile = NULL) {
+mdl_to_bibtex <- function(token, folder_name = NULL, folder_id = NULL,
+                          group_name = NULL, group_id = NULL,
+                          bibfile = NULL) {
   if (is.null(bibfile)) {
     bibfile <- paste0(folder_name, ".bib")
   }
