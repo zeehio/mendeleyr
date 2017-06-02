@@ -147,3 +147,12 @@ test_that("There are two documents with the same attached file", {
   expect_equal(nrow(result$remove), 1)
   expect_equal(result$remove$id, "62bbab36-f0d2-1c9f-3481-5b02f65b9287")
 })
+
+
+test_that("Retreive only two most recent documents", {
+  token <- skip_if_no_token()
+  result1 <- mdl_documents(token)
+  recent_date <- sort(result1$last_modified)[nrow(result1) - 1]
+  result2 <- mdl_documents(token, modified_since = recent_date)
+  expect_equal(nrow(result2), 2)
+})

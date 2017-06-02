@@ -239,6 +239,10 @@ mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
                           group_name = NULL, group_id = NULL, modified_since = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
   folder_id <- get_folder_id(token, folder_name, folder_id, group_id = group_id)
+  if (!is.null(modified_since) && !is.null(folder_id)) {
+    # http://dev.mendeley.com/methods/#http-request199
+    stop("Not implemented (API only returns document ID)")
+  }
   if (!is.null(folder_id)) {
     url <- paste0("https://api.mendeley.com/folders/", folder_id, "/documents")
   } else {
@@ -253,10 +257,16 @@ mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
                             modified_since = modified_since,
                             view = "bib"))
 
-  my_bind_rows(
+  df <- my_bind_rows(
     mdl_get_all_pages(url,
                       token,
                       httr::accept("application/vnd.mendeley-document.1+json")))
+  for (col in c("created", "last_modified")) {
+    if (col %in% colnames(df)) {
+      df[[col]] <- as.POSIXct(df[[col]], format = "%Y-%m-%dT%H:%M:%S", tz = "UTC")
+    }
+  }
+  df
 }
 
 #' Download a file
