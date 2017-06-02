@@ -9,10 +9,17 @@ skip_if_no_credentials <- function() {
 
 skip_if_no_token <- function() {
   skip_if_no_credentials()
-  options("httr_oauth_cache" = TRUE)
+  # in Travis we load the test oauth from the just unencrypted file,
+  # out of travis we follow the default
+  if (identical(Sys.getenv("TRAVIS"), "true")) {
+    token_cache <- file.path(Sys.getenv("TRAVIS_BUILD_DIR"), ".httr-oauth")
+  } else {
+    token_cache <- NA
+  }
   token <- tryCatch({
-    mdl_token()
+    mdl_token(cache = token_cache)
   }, error = function(e) NULL)
+
   if (is.null(token)) {
     skip("User credentials (token) not available")
   }
@@ -43,7 +50,7 @@ test_that("Documents are retreived", {
   token <- skip_if_no_token()
   docs_in_test1 <- mdl_documents(token, folder_name = "Test1")
   expect_equal(nrow(docs_in_test1), 1)
-  expect_equal(docs_in_test1$authors, "John Doe")
+  expect_equal(docs_in_test1$id, "fc609003-8cd6-34ce-a7a5-3747737464cd")
 })
 
 test_that("Files are retreived", {

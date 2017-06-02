@@ -62,6 +62,7 @@ mdl_conf_load <- function(where = ".mendeley_conf.json", try_env = TRUE) {
 #' (mendeleyr) access to your account.
 #' @param mendeley_conf a list with two items: `client_id` and `client_secret`.
 #'  If it is a file path to a json file, it will be loaded with [mdl_conf_load()]
+#' @inheritParams httr::oauth2.0_token
 #' @examples
 #' \dontrun{
 #'  # loads secret from ".mendeley_conf.json" in current directory:
@@ -73,7 +74,7 @@ mdl_conf_load <- function(where = ".mendeley_conf.json", try_env = TRUE) {
 #'
 #' }
 #' @export
-mdl_token <- function(mendeley_conf) {
+mdl_token <- function(mendeley_conf, cache = NA) {
   if (missing(mendeley_conf)) {
       mendeley_conf <- mdl_conf_load()
   } else if (is.character(mendeley_conf) &&
@@ -97,7 +98,8 @@ mdl_token <- function(mendeley_conf) {
   token <- httr::oauth2.0_token(mendeley_oauth, app,
                                 scope = "all",
                                 use_oob = FALSE,
-                                use_basic_auth = TRUE)
+                                use_basic_auth = TRUE,
+                                cache = cache)
   token
 }
 
