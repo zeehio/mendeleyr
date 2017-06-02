@@ -26,9 +26,9 @@ Quick start:
 
 ### Setup:
 
-Mendeley's API is based on oAuth2. This means that mendeleyr should be registered as an application in \[<http://dev.mendeley.com/myapps.html>\] and receive a `client_id` and a `client_secret`. As `mendeleyr` is open source, the package can't provide a secret so it is required that the `mendeleyr` user registers its own app.
+Mendeley's API is based on oAuth2. This means that `mendeleyr` should be registered as an application in \[<http://dev.mendeley.com/myapps.html>\] and receive a `client_id` and a `client_secret`. As `mendeleyr` is open source, the package can't provide a secret so it is required that the `mendeleyr` user registers its own app.
 
-Fortunately it's an easy step, and `mdl_conf_new()` provides detailed instructions on how to do that:
+This is a one-time step, and it is very easy. `mdl_conf_new()` provides detailed instructions on how to do that:
 
 ``` r
 library(mendeleyr)
@@ -41,17 +41,17 @@ mdl_conf_new()
     ## Then you can use:
     ## mdl_conf_save(client_id = "given-by-mendeley", client_secret = "given-by-mendeley")
 
-Once you have registered you app, you will be able to save the secret to a file.
+Once you have registered you app, you will be able to save the mendeley parameters to a file, by default it is saved as `.mendeley_conf.json` in the current directory.
 
 ``` r
 mdl_conf_save(client_id = "given-by-mendeley", client_secret = "given-by-mendeley",
-              where = "/choose/a/path/mendeley_conf.json")
+              where = ".mendeley_conf.json")
 ```
 
-The final step is to grant `mendeleyr` access to your account. Your web browser will open and ask you login and authorize. With this `mendeleyr` never sees your username and password :-)
+Mendeley knows now that you are using `mendeleyr`. The final step is to grant `mendeleyr` access to your account. The first time you run this, you will need to login to Mendeley through the browser. Afterwards a token will be saved so you don't have to login every time.
 
 ``` r
-token <- mdl_token("/choose/a/path/mendeley_conf.json")
+token <- mdl_token(".mendeley_conf.json")
 ```
 
 ### Using mendeleyr
@@ -63,13 +63,17 @@ all_my_folders <- mdl_folders(token)
 mdl_to_bibtex(token, folder_name = "my_folder", bibfile = "my_folder.bib")
 ```
 
-But we can work with groups as well:
+If the folder belongs to a group:
 
 ``` r
-all_folders_from_a_group <- mdl_folders(token, group_name = "my_group")
-
 mdl_to_bibtex(token, folder_name = "shared_folder", group_name = "my_group",
               bibfile = "shared_folder.bib")
+```
+
+#### List all documents in a folder:
+
+``` r
+my_docs <- mdl_documents(token, folder_name = "my_folder")
 ```
 
 #### Download a file:
