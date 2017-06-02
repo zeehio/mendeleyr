@@ -305,17 +305,21 @@ mdl_docid_as_bibtex <- function(token, document_id) {
 mdl_to_bibtex <- function(token, folder_name = NULL, folder_id = NULL,
                           group_name = NULL, group_id = NULL,
                           bibfile = NULL) {
+  group_id <- get_group_id(token, group_name, group_id)
+  folder_id <- get_folder_id(token, folder_name, folder_id, group_id = group_id)
+  if (is.null(folder_name)) {
+    folders <- mdl_folders(token)
+    folder_name <- folders$name[folders$id == folder_id]
+  }
   if (is.null(bibfile)) {
     bibfile <- paste0(folder_name, ".bib")
   }
-  group_id <- get_group_id(token, group_name, group_id)
-  folder_id <- get_folder_id(token, folder_name, folder_id, group_id = group_id)
 
   all_documents <- mdl_documents(token, folder_id = folder_id, group_id = group_id)
   bibtex <- mdl_docid_as_bibtex(token, all_documents$id)
 
   write(bibtex, file = bibfile)
-  return()
+  return(bibfile)
 }
 
 form_url <- function(url, params) {
