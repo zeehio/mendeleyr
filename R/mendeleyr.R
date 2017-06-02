@@ -2,6 +2,7 @@
 #' @param client_id The client id given by Mendeley when you create an app at http://dev.mendeley.com/myapps.html
 #' @param client_secret The client secret given by Mendeley when you create an app
 #' @param where File name where mendeleyr will store the client_id and client_secret
+#' @param try_env Try loading parameters from OS environment variables `MENDELEY_CLIENT_ID` and `MENDELEY_CLIENT_SECRET`
 #' @name mendeley_conf
 NULL
 
@@ -28,9 +29,26 @@ mdl_conf_save <- function(client_id, client_secret, where = ".mendeley_conf.json
           file.path(where), "'.\n", "Do not publish your mendeley secrets.")
 }
 
+get_conf_environment <- function() {
+  client_id <- Sys.getenv("MENDELEY_CLIENT_ID", unset = NA)
+  client_secret <- Sys.getenv("MENDELEY_CLIENT_SECRET", unset = NA)
+  if (is.na(client_id) || is.na(client_secret)) {
+    return(NULL)
+  } else {
+    return(list(client_id = client_id, client_secret = client_secret))
+  }
+}
+
+
 #' @rdname mendeley_conf
 #' @export
-mdl_conf_load <- function(where = ".mendeley_conf.json") {
+mdl_conf_load <- function(where = ".mendeley_conf.json", try_env = TRUE) {
+  if (isTRUE(try_env)) {
+    mendeley_conf <- get_conf_environment()
+    if (!is.null(mendeley_conf)) {
+      return(mendeley_conf)
+    }
+  }
   if (!file.exists(where)) {
     stop("Mendeley client_id and client_secret not found in '", where, "'.\n",
          "Please obtain them with mdl_conf_new() and save them with mdl_conf_save()")
@@ -57,7 +75,7 @@ mdl_conf_load <- function(where = ".mendeley_conf.json") {
 #' @export
 mdl_token <- function(mendeley_conf) {
   if (missing(mendeley_conf)) {
-    mendeley_conf <- mdl_conf_load()
+      mendeley_conf <- mdl_conf_load()
   } else if (is.character(mendeley_conf) &&
              length(mendeley_conf) == 1 &&
              file.exists(mendeley_conf)) {

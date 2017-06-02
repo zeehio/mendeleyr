@@ -11,7 +11,7 @@ mdl_conf_new()
 
 mdl_conf_save(client_id, client_secret, where = ".mendeley_conf.json")
 
-mdl_conf_load(where = ".mendeley_conf.json")
+mdl_conf_load(where = ".mendeley_conf.json", try_env = TRUE)
 }
 \arguments{
 \item{client_id}{The client id given by Mendeley when you create an app at http://dev.mendeley.com/myapps.html}
@@ -19,6 +19,8 @@ mdl_conf_load(where = ".mendeley_conf.json")
 \item{client_secret}{The client secret given by Mendeley when you create an app}
 
 \item{where}{File name where mendeleyr will store the client_id and client_secret}
+
+\item{try_env}{Try loading parameters from OS environment variables \code{MENDELEY_CLIENT_ID} and \code{MENDELEY_CLIENT_SECRET}}
 }
 \description{
 Create, Load and Save client_id and client_secret

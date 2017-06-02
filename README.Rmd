@@ -7,6 +7,9 @@ output: rmarkdown::github_document
 
 mendeleyr provides a subset of the Mendeley API through R.
 
+[![Build Status](https://travis-ci.org/zeehio/mendeleyr.svg?branch=master)](https://travis-ci.org/zeehio/mendeleyr)
+
+
 ## Browse source code
 
 Checkout the code and browse it at

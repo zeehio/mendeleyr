@@ -1,9 +1,11 @@
 mendeleyr
 ================
 Sergio Oller
-2017-06-01
+2017-06-02
 
 mendeleyr provides a subset of the Mendeley API through R.
+
+[![Build Status](https://travis-ci.org/zeehio/mendeleyr.svg?branch=master)](https://travis-ci.org/zeehio/mendeleyr)
 
 Browse source code
 ------------------
@@ -30,14 +32,15 @@ Fortunately it's an easy step, and `mdl_conf_new()` provides detailed instructio
 
 ``` r
 library(mendeleyr)
+```
+
+    ## Error in library(mendeleyr): there is no package called 'mendeleyr'
+
+``` r
 mdl_conf_new()
 ```
 
-    ## Error in mdl_conf_new(): mdl_conf_save requires the client_id and client_secret.
-    ## You can obtain these registering an app at Mendeley at http://dev.mendeley.com/myapps.html.
-    ## Please use http://localhost:1410/ as 'Redirect URL'
-    ## Then you can use:
-    ## mdl_conf_save(client_id = "given-by-mendeley", client_secret = "given-by-mendeley")
+    ## Error in mdl_conf_new(): could not find function "mdl_conf_new"
 
 Once you have registered you app, you will be able to save the secret to a file.
 

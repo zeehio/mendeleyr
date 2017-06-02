@@ -11,7 +11,8 @@ Description: This package interfaces with the R API from Mendeley
     I am looking forward to stop using mendeleyr as the package name if Mendeley
     decides to use it.
 Imports: jsonlite, httr, httpuv, curl
-Suggests: dplyr
+Suggests: dplyr,
+    testthat
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
