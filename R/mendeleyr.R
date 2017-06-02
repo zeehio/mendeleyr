@@ -236,7 +236,7 @@ mdl_folders <- function(token, group_name = NULL, group_id = NULL) {
 #' @inheritParams mdl_common_params
 #' @export
 mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
-                          group_name = NULL, group_id = NULL) {
+                          group_name = NULL, group_id = NULL, modified_since = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
   folder_id <- get_folder_id(token, folder_name, folder_id, group_id = group_id)
   if (!is.null(folder_id)) {
@@ -244,7 +244,14 @@ mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
   } else {
     url <- paste0("https://api.mendeley.com/documents")
   }
-  url <- form_url(url, list(group_id = group_id, view = "bib"))
+  if (!is.null(modified_since)) {
+    if (inherits(modified_since, "POSIXt")) {
+      modified_since <- format(modified_since, "%Y-%m-%dT%H:%M:%S", tz = "UTC")
+    }
+  }
+  url <- form_url(url, list(group_id = group_id,
+                            modified_since = modified_since,
+                            view = "bib"))
 
   my_bind_rows(
     mdl_get_all_pages(url,

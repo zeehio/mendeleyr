@@ -5,7 +5,7 @@
 \title{Get the Document IDs from a given folder_id}
 \usage{
 mdl_documents(token, folder_name = NULL, folder_id = NULL,
-  group_name = NULL, group_id = NULL)
+  group_name = NULL, group_id = NULL, modified_since = NULL)
 }
 \arguments{
 \item{token}{A Token given by \code{\link[=mdl_token]{mdl_token()}} that provides access to your account.}
