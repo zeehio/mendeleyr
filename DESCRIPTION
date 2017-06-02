@@ -10,9 +10,8 @@ Description: This package interfaces with the R API from Mendeley
     Mendeley provides a better alternative. I do not plan to submit it to CRAN.
     I am looking forward to stop using mendeleyr as the package name if Mendeley
     decides to use it.
-Imports: jsonlite, httr, httpuv, curl
-Suggests: dplyr,
-    testthat
+Imports: jsonlite, httr, httpuv, curl, dplyr
+Suggests: testthat
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

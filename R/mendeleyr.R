@@ -136,7 +136,6 @@ mdl_get_all_pages <- function(url, ...) {
   return(all_pages)
 }
 
-# I don't want force the use of dplyr and I need to save list columns
 my_bind_rows <- function(x) {
   # We need to specify list columns...
   y <- lapply(
@@ -150,11 +149,7 @@ my_bind_rows <- function(x) {
       return(row)
     })
 
-  if (requireNamespace("dplyr", quietly = TRUE)) {
-    as.data.frame(dplyr::bind_rows(y))
-  } else {
-    do.call(rbind, lapply(y, function(z) as.data.frame(z, stringsAsFactors = FALSE)))
-  }
+  dplyr::bind_rows(y)
 }
 
 #' Gets all the group information
@@ -249,7 +244,7 @@ mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
   } else {
     url <- paste0("https://api.mendeley.com/documents")
   }
-  url <- form_url(url, list(group_id = group_id))
+  url <- form_url(url, list(group_id = group_id, view = "bib"))
 
   my_bind_rows(
     mdl_get_all_pages(url,
