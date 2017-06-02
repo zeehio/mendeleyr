@@ -70,8 +70,7 @@ test_that("mdl_conf_load and mdl_conf_save work", {
 test_that("Folders are retreived", {
   token <- skip_if_no_token()
   folders <- mdl_folders(token)
-  expect_equal(nrow(folders), 2)
-  expect_equal(sort(folders$name), sort(c("Test1", "Test2")))
+  expect_true(all(c("Test1", "Test2", "Test3") %in% folders$name))
 })
 
 test_that("Documents are retreived", {
@@ -105,4 +104,46 @@ test_that("Create document works and delete works as well", {
   doc <- mdl_document_new(token, "Test New Document", "journal", hidden = TRUE)
   mdl_document_delete(token, doc$id)
   expect_equal(doc$last_modified, doc$created)
+})
+
+
+test_that("We have a group", {
+  token <- skip_if_no_token()
+  groups <- mdl_groups(token)
+  expect_equal(nrow(groups), 1)
+  expect_equal(groups$name, "TestGroup")
+})
+
+test_that("Get document as bibtex", {
+  token <- skip_if_no_token()
+  expect_equal(
+    mdl_docid_as_bibtex(token, document_id = "bae8c2a5-6744-3947-87ed-9e84c1e31f02"),
+    paste0(c("@article{Paskin1999TowardIdentifiers,\n", "    title = {{Toward unique identifiers}},\n",
+             "    year = {1999},\n", "    journal = {Proceedings of the IEEE},\n",
+             "    author = {Paskin, Norman},\n", "    isbn = {0262193736},\n",
+             "    doi = {10.1109/5.771073},\n", "    issn = {00189219}\n", "}"),
+           collapse = ""))
+})
+
+
+test_that("Whole folder to bibtex", {
+  token <- skip_if_no_token()
+  bibfile <- mdl_to_bibtex(token, folder_id = "01db097b-0d38-420d-929c-5ce2f95e22ac")
+  on.exit({unlink(bibfile)})
+  expect_equal(bibfile, "Test3.bib")
+  a <- readLines(bibfile)
+  expect_equal(a,
+               c("@article{Paskin1999TowardIdentifiers,", "    title = {{Toward unique identifiers}},",
+                 "    year = {1999},", "    journal = {Proceedings of the IEEE},",
+                 "    author = {Paskin, Norman},", "    isbn = {0262193736},",
+                 "    doi = {10.1109/5.771073},", "    issn = {00189219}", "}"
+               ))
+})
+
+
+test_that("There are two documents with the same attached file", {
+  token <- skip_if_no_token()
+  result <- mdl_docs_with_common_files(token)
+  expect_equal(nrow(result$remove), 1)
+  expect_equal(result$remove$id, "62bbab36-f0d2-1c9f-3481-5b02f65b9287")
 })
