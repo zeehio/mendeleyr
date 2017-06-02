@@ -121,16 +121,16 @@ mdl_next_page <- function(response_headers) {
   return(next_url)
 }
 
+response_to_json <- function(rsp) {
+  jsonlite::fromJSON(rawToChar(httr::content(rsp)), simplifyVector = FALSE)
+}
+
 mdl_get_all_pages <- function(url, ...) {
   all_pages <- list()
   while (!is.null(url)) {
     doc_rsp <- httr::GET(url, ...)
     stopifnot(doc_rsp$status_code == 200)
-    all_pages <- c(
-      all_pages,
-      jsonlite::fromJSON(rawToChar(httr::content(doc_rsp)),
-                         simplifyVector = FALSE)
-    )
+    all_pages <- c(all_pages, response_to_json(doc_rsp))
     url <- mdl_next_page(httr::headers(doc_rsp))
   }
   return(all_pages)
@@ -382,27 +382,62 @@ mdl_docs_with_common_files <- function(token, group_name = NULL, group_id = NULL
   list(all = all_entries, keep = all_entries_keep, remove = all_entries_remove)
 }
 
-#' Delete a Mendeley document
+# not ready... many more attributes available
+mdl_document_new <- function(token, title, type, group_id = NULL, hidden = TRUE) {
+  doc_params <- list(title = title, type = type, hidden = hidden)
+  if (!is.null(group_id)) {
+    doc_params$group_id <- group_id
+  }
+  resp <- httr::POST("https://api.mendeley.com/documents",
+                     token,
+                     httr::content_type('application/vnd.mendeley-document.1+json'),
+                     httr::accept('application/vnd.mendeley-document.1+json'),
+                     body = doc_params,
+                     encode = "json")
+  stopifnot(resp$status_code == 201)
+  document <- response_to_json(resp)
+  return(document)
+}
+
+
+#' Add document to folder
 #' @inheritParams mdl_common_params
 #' @export
-mdl_delete_document_one <- function(token, document_id) {
+mdl_document_to_folder <- function(token, document_id, folder_name = NULL,
+                                   folder_id = NULL, group_name = NULL, group_id = NULL) {
+  group_id <- get_group_id(token, group_name, group_id)
+  folder_id <- get_folder_id(token, folder_name, folder_id, group_id)
+  for (doc_id in document_id) {
+    result_1 <- httr::POST(paste0("https://api.mendeley.com/folders/",
+                                    curl::curl_escape(folder_id), "/documents"),
+                           token,
+                           httr::content_type('application/vnd.mendeley-document.1+json'),
+                           body = list("id" = curl::curl_escape(doc_id)),
+                           encode = "json")
+    stopifnot(result_1$status_code == 201)
+  }
+  return()
+}
+
+
+mdl_document_delete_one <- function(token, document_id) {
   result_1 <- httr::DELETE(paste0("https://api.mendeley.com/documents/",
                                   curl::curl_escape(document_id)), token)
   stopifnot(result_1$status_code == 204)
 }
 
-#' Delete one or more documents
+#' Delete one or more Mendeley documents
 #' @inheritParams mdl_common_params
 #' @param show_progress logical value to show a progress bar
 #' @export
-mdl_delete_document <- function(token, document_id, show_progress = interactive()) {
+mdl_document_delete <- function(token, document_id, show_progress = interactive()) {
   if (show_progress && length(document_id) > 5) {
     pb <- utils::txtProgressBar(min = 0, max = length(document_id), style = 3)
   } else {
     pb <- NULL
   }
   for (i in seq_len(length(document_id))) {
-    mdl_delete_document_one(token, document_id[i])
+    mdl_document_delete_one(token, document_id[i])
     if (!is.null(pb)) {
       utils::setTxtProgressBar(pb, i)
     }
