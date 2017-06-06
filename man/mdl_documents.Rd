@@ -17,6 +17,8 @@ mdl_documents(token, folder_name = NULL, folder_id = NULL,
 \item{group_name}{A group name. Read group IDs through \code{\link[=mdl_groups]{mdl_groups()}}}
 
 \item{group_id}{A group ID. Read group IDs through \code{\link[=mdl_groups]{mdl_groups()}}}
+
+\item{modified_since}{Only retrieve documents modified since that date.}
 }
 \description{
 Get the Document IDs from a given folder_id

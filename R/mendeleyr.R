@@ -234,6 +234,7 @@ mdl_folders <- function(token, group_name = NULL, group_id = NULL) {
 
 #' Get the Document IDs from a given folder_id
 #' @inheritParams mdl_common_params
+#' @param modified_since Only retrieve documents modified since that date.
 #' @export
 mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
                           group_name = NULL, group_id = NULL, modified_since = NULL) {
