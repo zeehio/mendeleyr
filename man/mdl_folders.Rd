@@ -4,7 +4,8 @@
 \alias{mdl_folders}
 \title{Retrieve all the Mendeley folders}
 \usage{
-mdl_folders(token, group_name = NULL, group_id = NULL)
+mdl_folders(token, group_name = NULL, group_id = NULL, max_objects = Inf,
+  condition = NULL)
 }
 \arguments{
 \item{token}{A Token given by \code{\link[=mdl_token]{mdl_token()}} that provides access to your account.}
@@ -12,7 +13,20 @@ mdl_folders(token, group_name = NULL, group_id = NULL)
 \item{group_name}{A group name. Read group IDs through \code{\link[=mdl_groups]{mdl_groups()}}}
 
 \item{group_id}{A group ID. Read group IDs through \code{\link[=mdl_groups]{mdl_groups()}}}
+
+\item{max_objects}{The maximum number of objects (documents, folders, files...) to retreive}
+
+\item{condition}{Either \code{NULL} (default) or a function taking an object (document,
+folder, file, ...) represented as a list and returning a logical value.
+The function will return the objects that have returned \code{TRUE}.}
 }
 \description{
 Retrieve all the Mendeley folders
+}
+\examples{
+\dontrun{
+token <- mendeleyr::mdl_token()
+mdl_folders(token, condition = function(obj) {obj$name == "YourFolderName"})
+mdl_folders(token, condition = function(obj) { mdl_to_POSIXct(obj[["modified"]]) > mdl_to_POSIXct("2017-06-14T00:00:00Z")})
+}
 }

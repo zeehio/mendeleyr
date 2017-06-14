@@ -4,10 +4,16 @@
 \alias{mdl_groups}
 \title{Gets all the group information}
 \usage{
-mdl_groups(token)
+mdl_groups(token, max_objects = Inf, condition = NULL)
 }
 \arguments{
 \item{token}{A Token given by \code{\link[=mdl_token]{mdl_token()}} that provides access to your account.}
+
+\item{max_objects}{The maximum number of objects (documents, folders, files...) to retreive}
+
+\item{condition}{Either \code{NULL} (default) or a function taking an object (document,
+folder, file, ...) represented as a list and returning a logical value.
+The function will return the objects that have returned \code{TRUE}.}
 }
 \description{
 Gets all the group information

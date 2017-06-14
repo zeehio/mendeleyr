@@ -125,7 +125,7 @@ httr_to_json_to_r <- function(rsp) {
   jsonlite::fromJSON(rawToChar(httr::content(rsp)), simplifyVector = FALSE)
 }
 
-mdl_get_objects <- function(url, ..., condition = NULL, max_objects = Inf) {
+mdl_get_objects <- function(url, ..., max_objects = Inf, condition = NULL) {
   if (!is.null(condition) && !is.function(condition)) {
     stop("condition should be a function taking an object and returning a logical, or NULL")
   }
@@ -175,8 +175,9 @@ my_bind_rows <- function(x) {
 #' Gets all the group information
 #' @inheritParams mdl_common_params
 #' @export
-mdl_groups <- function(token) {
-  grps <- mdl_get_objects("https://api.mendeley.com/groups", token)
+mdl_groups <- function(token, max_objects = Inf, condition = NULL) {
+  grps <- mdl_get_objects("https://api.mendeley.com/groups", token,
+                          max_objects = max_objects, condition = condition)
   my_bind_rows(grps)
 }
 
@@ -190,16 +191,16 @@ get_folder_id <- function(token, folder_name, folder_id, group_id = NULL) {
   }
   # Group ID is NULL
   if (!is.null(folder_name)) {
-    all_folders <- mdl_folders(token, group_id = group_id)
-    matched_folders <- all_folders$name == folder_name
-    if (sum(matched_folders) == 0) {
+    info <- mdl_folder_info(token = token, group_id = group_id, folder_name = folder_name)
+    if (nrow(info))
+    if (nrow(info) == 0) {
       stop("No folder found with name '", folder_name, "'")
     }
-    if (sum(matched_folders) > 1) {
+    if (nrow(info) > 1) {
       # Is this even possible?
       stop("More than one folder found with name '", folder_name, "'")
     }
-    return(all_folders$id[matched_folders])
+    return(info$id[1])
   }
   return(NULL)
 }
@@ -214,16 +215,17 @@ get_group_id <- function(token, group_name, group_id) {
   }
   # Group ID is NULL
   if (!is.null(group_name)) {
-    all_groups <- mdl_groups(token)
-    matched_groups <- all_groups$name == group_name
-    if (sum(matched_groups) == 0) {
+    matched_groups <- mdl_groups(token,
+                                 condition = function(obj) {"name" %in% obj && obj[["name"]] == group_name})
+
+    if (nrow(matched_groups) == 0) {
       stop("No group found with name '", group_name, "'")
     }
-    if (sum(matched_groups) > 1) {
+    if (nrow(matched_groups) > 1) {
       # Is this even possible?
       stop("More than one group found with name '", group_name, "'")
     }
-    return(all_groups$id[matched_groups])
+    return(matched_groups$id[1])
   }
   return(NULL)
 }
@@ -238,18 +240,63 @@ get_group_id <- function(token, group_name, group_id) {
 #' @param group_id A group ID. Read group IDs through [mdl_groups()]
 #' @param folder_name A folder name. Get folder names with [mdl_folders()].
 #' @param folder_id A folder ID. Get folder names with [mdl_folders()].
+#' @param max_objects The maximum number of objects (documents, folders, files...) to retreive
+#' @param condition Either `NULL` (default) or a function taking an object (document,
+#'        folder, file, ...) represented as a list and returning a logical value.
+#'        The function will return the objects that have returned `TRUE`.
 NULL
 
 #' Retrieve all the Mendeley folders
 #' @inheritParams mdl_common_params
 #' @export
-mdl_folders <- function(token, group_name = NULL, group_id = NULL) {
+#' @examples
+#' \dontrun{
+#' token <- mendeleyr::mdl_token()
+#' mdl_folders(token, condition = function(obj) {obj$name == "YourFolderName"})
+#' mdl_folders(token, condition = function(obj) { mdl_to_POSIXct(obj[["modified"]]) > mdl_to_POSIXct("2017-06-14T00:00:00Z")})
+#' }
+mdl_folders <- function(token, group_name = NULL, group_id = NULL, max_objects = Inf, condition = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
   url <- form_url("https://api.mendeley.com/folders/", list(group_id = group_id))
   my_bind_rows(
     mdl_get_objects(url,
                     token,
-                    httr::accept('application/vnd.mendeley-folder.1+json')))
+                    httr::accept('application/vnd.mendeley-folder.1+json'),
+                    max_objects = max_objects,
+                    condition = condition))
+}
+
+#' Gets information from a Mendeley Folder
+#' @inheritParams mdl_common_params
+#' @export
+mdl_folder_info <- function(token, folder_id = NULL, folder_name = NULL, group_id = NULL, group_name = NULL) {
+  if (is.null(folder_id) && is.null(folder_name)) {
+    stop("Missing both folder_id and folder_name")
+  }
+  if (!is.null(folder_id) && !is.null(folder_name)) {
+    stop("Both folder_id and folder_name are given")
+  }
+  if (!is.null(folder_id)) {
+    condition <- function(obj) {"id" %in% names(obj) && obj[["id"]] == folder_id }
+  } else if (!is.null(folder_name)) {
+    condition <- function(obj) {"name" %in% names(obj) && obj[["name"]] == folder_name }
+  } else {
+    condition <- NULL # impossible case
+  }
+  return(mdl_folders(token, group_name = group_name, group_id = group_id, max_objects = 1, condition = condition))
+}
+
+#' Convert a date time text given by Mendeley into a POSIXct time
+#' @param date_text a character vector with the date times as given by mendeley
+#' @return A POSIXct object with the date times converted
+#' @export
+mdl_to_POSIXct <- function(date_text) {
+  if (is.null(date_text)) {
+    return(NA)
+  }
+  ifelse(date_text == "NULL",
+         NA,
+         as.POSIXct(date_text, format = "%Y-%m-%dT%H:%M:%S", tz = "UTC"))
 }
 
 #' Get the Document IDs from a given folder_id
@@ -339,10 +386,13 @@ mdl_docid_as_bibtex <- function(token, document_id) {
 #' Creates a bib file from a Mendeley folder or group
 #' @inheritParams mdl_common_params
 #' @param bibfile "*.bib" file to write the documents from folder_name
+#' @param overwrite logical value to overwrite the bibfile. If `NULL` (default) we
+#'        overwrite only when the bibfile is older than the folder
+#'        last modification
 #' @export
 mdl_to_bibtex <- function(token, folder_name = NULL, folder_id = NULL,
                           group_name = NULL, group_id = NULL,
-                          bibfile = NULL) {
+                          bibfile = NULL, overwrite = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
   folder_id <- get_folder_id(token, folder_name, folder_id, group_id = group_id)
   if (is.null(folder_name)) {
@@ -351,6 +401,18 @@ mdl_to_bibtex <- function(token, folder_name = NULL, folder_id = NULL,
   }
   if (is.null(bibfile)) {
     bibfile <- paste0(folder_name, ".bib")
+  }
+
+
+  if (is.null(overwrite)) {
+    if (!file.exists(bibfile)) {
+      overwrite <- TRUE
+    }
+    overwrite <- TRUE # FIXME
+  }
+
+  if (file.exists(bibfile) && !isTRUE(overwrite)) {
+    return(bibfile)
   }
 
   all_documents <- mdl_documents(token, folder_id = folder_id, group_id = group_id)

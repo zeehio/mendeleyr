@@ -5,7 +5,7 @@
 \title{Creates a bib file from a Mendeley folder or group}
 \usage{
 mdl_to_bibtex(token, folder_name = NULL, folder_id = NULL,
-  group_name = NULL, group_id = NULL, bibfile = NULL)
+  group_name = NULL, group_id = NULL, bibfile = NULL, overwrite = NULL)
 }
 \arguments{
 \item{token}{A Token given by \code{\link[=mdl_token]{mdl_token()}} that provides access to your account.}
@@ -19,6 +19,10 @@ mdl_to_bibtex(token, folder_name = NULL, folder_id = NULL,
 \item{group_id}{A group ID. Read group IDs through \code{\link[=mdl_groups]{mdl_groups()}}}
 
 \item{bibfile}{"*.bib" file to write the documents from folder_name}
+
+\item{overwrite}{logical value to overwrite the bibfile. If \code{NULL} (default) we
+overwrite only when the bibfile is older than the folder
+last modification}
 }
 \description{
 Creates a bib file from a Mendeley folder or group

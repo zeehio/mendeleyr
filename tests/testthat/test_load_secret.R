@@ -73,6 +73,12 @@ test_that("Folders are retreived", {
   expect_true(all(c("Test1", "Test2", "Test3") %in% folders$name))
 })
 
+test_that("mdl_folders filters by folder name", {
+  token <- skip_if_no_token()
+  folder <- mendeleyr::mdl_folders(token, condition = function(obj) {obj$name == "Test1"})
+  expect_equal(nrow(folder), 1)
+})
+
 test_that("Documents are retreived", {
   token <- skip_if_no_token()
   docs_in_test1 <- mdl_documents(token, folder_name = "Test1")

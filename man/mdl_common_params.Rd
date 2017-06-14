@@ -15,6 +15,12 @@
 \item{folder_name}{A folder name. Get folder names with \code{\link[=mdl_folders]{mdl_folders()}}.}
 
 \item{folder_id}{A folder ID. Get folder names with \code{\link[=mdl_folders]{mdl_folders()}}.}
+
+\item{max_objects}{The maximum number of objects (documents, folders, files...) to retreive}
+
+\item{condition}{Either \code{NULL} (default) or a function taking an object (document,
+folder, file, ...) represented as a list and returning a logical value.
+The function will return the objects that have returned \code{TRUE}.}
 }
 \description{
 These are parameters common to several mendeleyr functions
