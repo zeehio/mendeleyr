@@ -27,6 +27,8 @@ Retrieve all the Mendeley folders
 \dontrun{
 token <- mendeleyr::mdl_token()
 mdl_folders(token, condition = function(obj) {obj$name == "YourFolderName"})
-mdl_folders(token, condition = function(obj) { mdl_to_POSIXct(obj[["modified"]]) > mdl_to_POSIXct("2017-06-14T00:00:00Z")})
+mdl_folders(token, condition = function(obj) {
+   mdl_to_POSIXct(obj[["modified"]]) > mdl_to_POSIXct("2017-06-14T00:00:00Z")
+})
 }
 }
