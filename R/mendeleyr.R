@@ -76,7 +76,7 @@ mdl_conf_load <- function(where = ".mendeley_conf.json", try_env = TRUE) {
 #' @export
 mdl_token <- function(mendeley_conf, cache = NA) {
   if (missing(mendeley_conf)) {
-      mendeley_conf <- mdl_conf_load()
+    mendeley_conf <- mdl_conf_load()
   } else if (is.character(mendeley_conf) &&
              length(mendeley_conf) == 1 &&
              file.exists(mendeley_conf)) {
@@ -121,19 +121,39 @@ mdl_next_page <- function(response_headers) {
   return(next_url)
 }
 
-response_to_json <- function(rsp) {
+httr_to_json_to_r <- function(rsp) {
   jsonlite::fromJSON(rawToChar(httr::content(rsp)), simplifyVector = FALSE)
 }
 
-mdl_get_all_pages <- function(url, ...) {
-  all_pages <- list()
-  while (!is.null(url)) {
+mdl_get_objects <- function(url, ..., condition = NULL, max_objects = Inf) {
+  if (!is.null(condition) && !is.function(condition)) {
+    stop("condition should be a function taking an object and returning a logical, or NULL")
+  }
+  obj_found <- 0
+  all_objects <- list()
+  while (!is.null(url) && length(all_objects) < max_objects) {
     doc_rsp <- httr::GET(url, ...)
     stopifnot(doc_rsp$status_code == 200)
-    all_pages <- c(all_pages, response_to_json(doc_rsp))
+    list_of_objs <- httr_to_json_to_r(doc_rsp)
+    if (is.null(condition)) {
+      objects_matching <- seq_along(list_of_objs)
+    } else {
+      objects_matching <- which(vapply(list_of_objs, condition, FUN.VALUE = logical(1)))
+    }
+    objects_found_in_page <- length(objects_matching)
+    list_of_objs <- list_of_objs[objects_matching]
+    if (obj_found + objects_found_in_page > max_objects) {
+      # Truncate result
+      all_objects <- c(all_objects, list_of_objs[seq_len(max_objects - obj_found)])
+      #obj_found <- max_objects
+      return(all_objects)
+    } else {
+      obj_found <- obj_found + objects_found_in_page
+      all_objects <- c(all_objects, list_of_objs)
+    }
     url <- mdl_next_page(httr::headers(doc_rsp))
   }
-  return(all_pages)
+  return(all_objects)
 }
 
 my_bind_rows <- function(x) {
@@ -156,7 +176,7 @@ my_bind_rows <- function(x) {
 #' @inheritParams mdl_common_params
 #' @export
 mdl_groups <- function(token) {
-  grps <- mdl_get_all_pages("https://api.mendeley.com/groups", token)
+  grps <- mdl_get_objects("https://api.mendeley.com/groups", token)
   my_bind_rows(grps)
 }
 
@@ -227,9 +247,9 @@ mdl_folders <- function(token, group_name = NULL, group_id = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
   url <- form_url("https://api.mendeley.com/folders/", list(group_id = group_id))
   my_bind_rows(
-    mdl_get_all_pages(url,
-                      token,
-                      httr::accept('application/vnd.mendeley-folder.1+json')))
+    mdl_get_objects(url,
+                    token,
+                    httr::accept('application/vnd.mendeley-folder.1+json')))
 }
 
 #' Get the Document IDs from a given folder_id
@@ -259,9 +279,9 @@ mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
                             view = "bib"))
 
   df <- my_bind_rows(
-    mdl_get_all_pages(url,
-                      token,
-                      httr::accept("application/vnd.mendeley-document.1+json")))
+    mdl_get_objects(url,
+                    token,
+                    httr::accept("application/vnd.mendeley-document.1+json")))
   for (col in c("created", "last_modified")) {
     if (col %in% colnames(df)) {
       df[[col]] <- as.POSIXct(df[[col]], format = "%Y-%m-%dT%H:%M:%S", tz = "UTC")
@@ -360,7 +380,7 @@ mdl_files <- function(token, document_id = NULL, group_name = NULL, group_id = N
   url <- form_url("https://api.mendeley.com/files",
                   list(document_id = document_id,
                        group_id = group_id, view = "client"))
-  all_entries_list <- mdl_get_all_pages(
+  all_entries_list <- mdl_get_objects(
     url,
     token,
     httr::accept('application/vnd.mendeley-file.1+json'),
@@ -412,7 +432,7 @@ mdl_document_new <- function(token, title, type, group_id = NULL, hidden = TRUE)
                      body = doc_params,
                      encode = "json")
   stopifnot(resp$status_code == 201)
-  document <- response_to_json(resp)
+  document <- httr_to_json_to_r(resp)
   return(document)
 }
 
@@ -426,7 +446,7 @@ mdl_document_to_folder <- function(token, document_id, folder_name = NULL,
   folder_id <- get_folder_id(token, folder_name, folder_id, group_id)
   for (doc_id in document_id) {
     result_1 <- httr::POST(paste0("https://api.mendeley.com/folders/",
-                                    curl::curl_escape(folder_id), "/documents"),
+                                  curl::curl_escape(folder_id), "/documents"),
                            token,
                            httr::content_type('application/vnd.mendeley-document.1+json'),
                            body = list("id" = curl::curl_escape(doc_id)),
