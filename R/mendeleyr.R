@@ -394,24 +394,29 @@ mdl_to_bibtex <- function(token, folder_name = NULL, folder_id = NULL,
                           group_name = NULL, group_id = NULL,
                           bibfile = NULL, overwrite = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
-  folder_id <- get_folder_id(token, folder_name, folder_id, group_id = group_id)
-  if (is.null(folder_name)) {
-    folders <- mdl_folders(token)
-    folder_name <- folders$name[folders$id == folder_id]
+  folder_info <- mdl_folder_info(token, folder_id = folder_id,
+                                 folder_name = folder_name, group_id = group_id)
+  folder_id <- folder_info$id[1]
+  folder_name <- folder_info$name[1]
+  if ("modified" %in% colnames(folder_info)) {
+    folder_modified <- folder_info$modified[1]
+  } else {
+    folder_modified <- NA
   }
+
   if (is.null(bibfile)) {
     bibfile <- paste0(folder_name, ".bib")
   }
 
-
-  if (is.null(overwrite)) {
-    if (!file.exists(bibfile)) {
-      overwrite <- TRUE
-    }
-    overwrite <- TRUE # FIXME
+  bibfile_exists <- file.exists(bibfile)
+  if (is.null(overwrite) && bibfile_exists) {
+    bibfile_mtime <- file.mtime(bibfile)
+    overwrite <- isTRUE(folder_modified > bibfile_mtime)
+  } else {
+    overwrite <- TRUE
   }
 
-  if (file.exists(bibfile) && !isTRUE(overwrite)) {
+  if (bibfile_exists && !isTRUE(overwrite)) {
     return(bibfile)
   }
 
