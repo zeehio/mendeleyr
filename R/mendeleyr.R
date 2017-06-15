@@ -484,6 +484,7 @@ mdl_to_bibtex <- function(token, folder_name = NULL, folder_id = NULL,
   all_documents <- mdl_documents(token, folder_id = folder_id, group_id = group_id)
   bibtex <- mdl_docid_as_bibtex(token, all_documents$id)
 
+  dir.create(dirname(bibfile), recursive = TRUE)
   write(bibtex, file = bibfile)
   return(bibfile)
 }
