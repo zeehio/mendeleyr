@@ -125,6 +125,11 @@ httr_to_json_to_r <- function(rsp) {
   jsonlite::fromJSON(rawToChar(httr::content(rsp)), simplifyVector = FALSE)
 }
 
+mdl_num_objects <- function(url, ..., max_objects = Inf) {
+  doc_rsp <- httr::GET(url, ...)
+  return(min(max_objects, as.numeric(doc_rsp[["headers"]][["mendeley-count"]])))
+}
+
 mdl_get_objects <- function(url, ..., max_objects = Inf, condition = NULL) {
   if (!is.null(condition) && !is.function(condition)) {
     stop("condition should be a function taking an object and returning a logical, or NULL")
@@ -192,7 +197,6 @@ get_folder_id <- function(token, folder_name, folder_id, group_id = NULL) {
   # Group ID is NULL
   if (!is.null(folder_name)) {
     info <- mdl_folder_info(token = token, group_id = group_id, folder_name = folder_name)
-    if (nrow(info))
     if (nrow(info) == 0) {
       stop("No folder found with name '", folder_name, "'")
     }
@@ -216,7 +220,7 @@ get_group_id <- function(token, group_name, group_id) {
   # Group ID is NULL
   if (!is.null(group_name)) {
     matched_groups <- mdl_groups(token,
-                                 condition = function(obj) {"name" %in% obj && obj[["name"]] == group_name})
+                                 condition = function(obj) {"name" %in% names(obj) && obj[["name"]] == group_name})
 
     if (nrow(matched_groups) == 0) {
       stop("No group found with name '", group_name, "'")
@@ -259,7 +263,7 @@ NULL
 #' }
 mdl_folders <- function(token, group_name = NULL, group_id = NULL, max_objects = Inf, condition = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
-  url <- form_url("https://api.mendeley.com/folders/", list(group_id = group_id))
+  url <- form_url("https://api.mendeley.com/folders/", list(group_id = group_id, limit = 200))
   my_bind_rows(
     mdl_get_objects(url,
                     token,
@@ -301,36 +305,91 @@ mdl_to_POSIXct <- function(date_text) {
          as.POSIXct(date_text, format = "%Y-%m-%dT%H:%M:%S", tz = "UTC"))
 }
 
+
+get_doc_ids_from_folder <- function(token, folder_id, group_id) {
+  if (is.null(folder_id)) {
+    stop("No given folder id")
+  }
+  url <- paste0("https://api.mendeley.com/folders/", folder_id, "/documents")
+  url <- form_url(url, list(group_id = group_id, limit = 200))
+  df <- my_bind_rows(
+    mdl_get_objects(url,
+                    token,
+                    httr::accept("application/vnd.mendeley-document.1+json")))
+  return(df)
+}
+
 #' Get the Document IDs from a given folder_id
 #' @inheritParams mdl_common_params
 #' @param modified_since Only retrieve documents modified since that date.
 #' @export
 mdl_documents <- function(token, folder_name = NULL, folder_id = NULL,
-                          group_name = NULL, group_id = NULL, modified_since = NULL) {
+                          group_name = NULL, group_id = NULL,
+                          modified_since = NULL,
+                          max_objects = Inf, condition = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
   folder_id <- get_folder_id(token, folder_name, folder_id, group_id = group_id)
-  if (!is.null(modified_since) && !is.null(folder_id)) {
-    # http://dev.mendeley.com/methods/#http-request199
-    stop("Not implemented (API only returns document ID)")
-  }
-  if (!is.null(folder_id)) {
-    url <- paste0("https://api.mendeley.com/folders/", folder_id, "/documents")
+
+  if (is.null(folder_id)) {
+    document_id <- NULL
   } else {
-    url <- paste0("https://api.mendeley.com/documents")
+    document_id <- get_doc_ids_from_folder(token, folder_id, group_id)$id
   }
+
   if (!is.null(modified_since)) {
     if (inherits(modified_since, "POSIXt")) {
       modified_since <- format(modified_since, "%Y-%m-%dT%H:%M:%S", tz = "UTC")
     }
   }
-  url <- form_url(url, list(group_id = group_id,
-                            modified_since = modified_since,
-                            view = "bib"))
 
-  df <- my_bind_rows(
-    mdl_get_objects(url,
-                    token,
-                    httr::accept("application/vnd.mendeley-document.1+json")))
+  url <- form_url("https://api.mendeley.com/documents",
+                  list(group_id = group_id,
+                       modified_since = modified_since,
+                       limit = 200,
+                       view = "bib"))
+
+  if (is.null(document_id)) {
+    df_list <- mdl_get_objects(url,
+                               token,
+                               httr::accept("application/vnd.mendeley-document.1+json"),
+                               max_objects = max_objects,
+                               condition = condition)
+  } else {
+    num_max_req_docs <- min(length(document_id), max_objects)
+    num_all_docs <- mdl_num_objects(url, token, httr::accept("application/vnd.mendeley-document.1+json"))
+    if (num_max_req_docs < ceiling(num_all_docs/100)) {
+      df_list <- list()
+      for (doc_id in document_id) {
+        if (length(df_list) >= num_max_req_docs) {
+          break
+        }
+        url <- form_url(paste0("https://api.mendeley.com/documents/", doc_id),
+                        list(view = "bib"))
+        doc_rsp <- httr::GET(url, token, httr::accept("application/vnd.mendeley-document.1+json"))
+        stopifnot(doc_rsp$status_code == 200)
+        obj <- httr_to_json_to_r(doc_rsp)
+        if (is.null(condition)) {
+          df_list <- c(df_list, list(obj))
+        } else {
+          if (isTRUE(condition(obj))) {
+            df_list <- c(df_list, list(obj))
+          }
+        }
+      }
+    } else {
+      if (is.null(condition)) {
+        condition2 <- function(obj) obj$id %in% document_id
+      } else {
+        condition2 <- function(obj) condition(obj) && obj$id %in% document_id
+      }
+      df_list <- mdl_get_objects(url,
+                                 token,
+                                 httr::accept("application/vnd.mendeley-document.1+json"),
+                                 max_objects = max_objects,
+                                 condition = condition2)
+    }
+  }
+  df <- my_bind_rows(df_list)
   for (col in c("created", "last_modified")) {
     if (col %in% colnames(df)) {
       df[[col]] <- as.POSIXct(df[[col]], format = "%Y-%m-%dT%H:%M:%S", tz = "UTC")
@@ -448,6 +507,7 @@ mdl_files <- function(token, document_id = NULL, group_name = NULL, group_id = N
   group_id <- get_group_id(token, group_name, group_id)
   url <- form_url("https://api.mendeley.com/files",
                   list(document_id = document_id,
+                       limit = 200,
                        group_id = group_id, view = "client"))
   all_entries_list <- mdl_get_objects(
     url,

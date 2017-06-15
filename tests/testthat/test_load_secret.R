@@ -162,3 +162,9 @@ test_that("Retreive only two most recent documents", {
   result2 <- mdl_documents(token, modified_since = recent_date)
   expect_equal(nrow(result2), 2)
 })
+
+test_that("mdl_documents with a folder works", {
+  token <- skip_if_no_token()
+  result1 <- mdl_documents(token, folder_name = "Test6")
+  expect_equal(nrow(result1), 2)
+})

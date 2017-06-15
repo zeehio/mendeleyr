@@ -5,7 +5,8 @@
 \title{Get the Document IDs from a given folder_id}
 \usage{
 mdl_documents(token, folder_name = NULL, folder_id = NULL,
-  group_name = NULL, group_id = NULL, modified_since = NULL)
+  group_name = NULL, group_id = NULL, modified_since = NULL,
+  max_objects = Inf, condition = NULL)
 }
 \arguments{
 \item{token}{A Token given by \code{\link[=mdl_token]{mdl_token()}} that provides access to your account.}
@@ -19,6 +20,12 @@ mdl_documents(token, folder_name = NULL, folder_id = NULL,
 \item{group_id}{A group ID. Read group IDs through \code{\link[=mdl_groups]{mdl_groups()}}}
 
 \item{modified_since}{Only retrieve documents modified since that date.}
+
+\item{max_objects}{The maximum number of objects (documents, folders, files...) to retreive}
+
+\item{condition}{Either \code{NULL} (default) or a function taking an object (document,
+folder, file, ...) represented as a list and returning a logical value.
+The function will return the objects that have returned \code{TRUE}.}
 }
 \description{
 Get the Document IDs from a given folder_id
