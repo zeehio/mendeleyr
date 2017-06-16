@@ -422,6 +422,24 @@ mdl_download_file <- function(token, file_row, destfile = NULL) {
   return(destfile)
 }
 
+# http://support.mendeley.com/customer/en/portal/questions/17083953-bug-in-bibtex-export
+# Mendeley exports as bibtex escaping underscores in the DOI: doi = {10.1007/978-1-61779-624-1{\_}12}
+# It should provide them unescaped: doi = {10.1007/978-1-61779-624-1_12}
+# This parses the bibtex as given by mendeley and fixes the DOI
+fix_bibtex_mendeley_api <- function(bibtex) {
+  bibtex <- strsplit(bibtex, "\n", fixed = TRUE)[[1]]
+  doi_lines <- grepl("(\\s*doi\\s*=\\s*\\{)(.*)(\\}.*)", bibtex)
+  fix_doilines <- function(doilines) {
+    before_doi <-  gsub("(\\s*doi\\s*=\\s*\\{)(.*)(\\}.*)", "\\1", doilines)
+    the_doi <-  gsub("(\\s*doi\\s*=\\s*\\{)(.*)(\\}.*)", "\\2", doilines)
+    after_doi <-  gsub("(\\s*doi\\s*=\\s*\\{)(.*)(\\}.*)", "\\3", doilines)
+    the_doi <- gsub("{\\_}", "_", the_doi, fixed = TRUE)
+    paste0(before_doi, the_doi, after_doi)
+  }
+  bibtex[doi_lines] <- fix_doilines(bibtex[doi_lines])
+  paste0(bibtex, collapse = "\n")
+}
+
 mdl_docid_as_bibtex_one <- function(token, document_id) {
   url <- form_url(paste0("https://api.mendeley.com/documents/",
                          curl::curl_escape(document_id)),
@@ -430,7 +448,8 @@ mdl_docid_as_bibtex_one <- function(token, document_id) {
                        token,
                        httr::accept('application/x-bibtex'))
   stopifnot(doc_rsp$status_code == 200)
-  rawToChar(httr::content(doc_rsp))
+  bibtex <- rawToChar(httr::content(doc_rsp))
+  fix_bibtex_mendeley_api(bibtex)
 }
 
 #' Get a document ID as bibtex
