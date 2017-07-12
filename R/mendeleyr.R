@@ -250,6 +250,10 @@ get_group_id <- function(token, group_name, group_id) {
 #'        The function will return the objects that have returned `TRUE`.
 NULL
 
+parse_mdl_datetime <- function(x) {
+  as.POSIXct(strptime(x, "%Y-%m-%dT%H:%M:%S"))
+}
+
 #' Retrieve all the Mendeley folders
 #' @inheritParams mdl_common_params
 #' @export
@@ -264,12 +268,20 @@ NULL
 mdl_folders <- function(token, group_name = NULL, group_id = NULL, max_objects = Inf, condition = NULL) {
   group_id <- get_group_id(token, group_name, group_id)
   url <- form_url("https://api.mendeley.com/folders/", list(group_id = group_id, limit = 200))
-  my_bind_rows(
-    mdl_get_objects(url,
-                    token,
-                    httr::accept('application/vnd.mendeley-folder.1+json'),
-                    max_objects = max_objects,
-                    condition = condition))
+  folders <-
+    my_bind_rows(
+      mdl_get_objects(url,
+                      token,
+                      httr::accept('application/vnd.mendeley-folder.1+json'),
+                      max_objects = max_objects,
+                      condition = condition))
+  if ("modified" %in% colnames(folders)) {
+    folders$modified <- parse_mdl_datetime(folders$modified)
+  }
+  if ("created" %in% colnames(folders)) {
+    folders$created <- parse_mdl_datetime(folders$created)
+  }
+  folders
 }
 
 #' Gets information from a Mendeley Folder
