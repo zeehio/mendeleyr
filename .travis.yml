@@ -26,7 +26,15 @@ env:
     - secure: "P6AcSlFIxMsYfXZViFbc10e1s96je/oGLg1vHCIWQAcguchUP2hmiDoJFqPnbkLmMSxE14lAiEE+RCvjA/A4I9gbQ8T9aEN64kZh5gYG+4nO6gF8FNJAqcVwmJwHozWgZDbr3/VNwyV+hXJr5QQm0sHKQo+t/ItdfugJ3ou2p1QJr1iMGCKeWMSb1QkczoeJ5Uk19jO1LCvLLbkabbjN6pVc99UEZh/7p+Q5Q6ZJ3ebKeH2Hkj4Vkc8ef34ddDYdwkyHlRONe874EiPUw/FVi1kLe0Vuq4FGSepjhnNTIWORN/fXH0/I5zKYwsSmB2YCrfw6fpI13I1/jY45Um0SbwSwUakdrYs8CxucqWyy8VuTXIAiVfAf6M5pBtAep2i4dcMmh/9wFqa+ZPvz8RMSB5gQyHCh7CKgqSq1bbNLSljohVHtzM9m9EhXvTkvcpolBL2tQcjYR9pYWd04NVJK4ETfaG3VeS8APbcBQPoAkjWLQYRqmSHnOJwDMhkt4HucVR3BN9VK4DDHk/MPZBtpJrzEEngkbG+DJqnlOsLO12CzS3/Y0UErYPcdi0vN0G/a+Ey4DQIuYnOiaMmFGxFPenXFEvTOvdf4/TWz9e5vHkrB07Q77vOVEDvW3KFeqoj3ptm2BHFaq1jlBV0Olf4DSCkM/cg6IVQfUU1OtZ/xDhc="
 
 # Token credentials to my test account
+# To create .httr-oauth:
+#  1. Use mdl_token() and login using my personal test account
+# To encript it:
+#  1. gem install travis --user
+#  2. PATH="$PATH:$HOME/.gem/ruby/2.3.0/bin"
+#  3. travis login
+#  4. travis encrypt-file .httr-oauth
+#  5. Update this line:
 before_install:
-  - openssl aes-256-cbc -K $encrypted_14d0ef99bd92_key -iv $encrypted_14d0ef99bd92_iv -in .httr-oauth.enc -out .httr-oauth -d
+  - openssl aes-256-cbc -K $encrypted_42341e0d441d_key -iv $encrypted_42341e0d441d_iv -in .httr-oauth.enc -out .httr-oauth -d
 
 
