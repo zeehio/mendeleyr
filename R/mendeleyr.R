@@ -251,7 +251,7 @@ get_group_id <- function(token, group_name, group_id) {
 NULL
 
 parse_mdl_datetime <- function(x) {
-  as.POSIXct(strptime(x, "%Y-%m-%dT%H:%M:%S"))
+  as.POSIXct(strptime(x, "%Y-%m-%dT%H:%M:%S", tz = "UTC"))
 }
 
 #' Retrieve all the Mendeley folders
